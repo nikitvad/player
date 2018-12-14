@@ -1,27 +1,30 @@
 package com.softgroup.android.musicplayer
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.support.v7.app.AppCompatActivity
+import android.content.*
+import android.media.session.MediaSession
 import android.os.Bundle
 import android.os.IBinder
-import android.os.PersistableBundle
 import android.provider.MediaStore
-import android.util.Log
-import android.view.View
-import android.widget.Toast
+import android.support.v7.app.AppCompatActivity
 import com.softgroup.android.musicplayer.data.Audio
 import com.softgroup.android.musicplayer.services.MediaPlayerService
-import kotlinx.android.synthetic.main.activity_main.*
+import com.softgroup.android.musicplayer.utils.StorageUtil
+import kotlinx.android.synthetic.main.activity_main.*;
+
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val BROADCAST_PLAY_NEW_AUDIO = "com.softgroup.android.musicplayer"
+        const val BROADCAST_PLAY_PAUSE = "com.softgroup.android.musicplayer.play_pause"
+    }
 
     private lateinit var playerService: MediaPlayerService
     private var serviceBounded = false
 
     private var audioList: ArrayList<Audio>? = null
+
+    private lateinit var mediaSession: MediaSession
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,12 +32,23 @@ class MainActivity : AppCompatActivity() {
 
         loadAudio()
 
-        if(audioList?.size!! > 0){
+        mediaSession = MediaSession(applicationContext, "AudioPlayer")
 
-            Log.d("sdfsdf", audioList?.toString())
 
-            playAudio(audioList?.get(0)?.data!!)
+        prev.setOnClickListener {
+            val currentPos = StorageUtil(this).loadAudioIndex()
+            playAudio(currentPos - 1)
         }
+
+        next.setOnClickListener {
+            val currentPos = StorageUtil(this).loadAudioIndex()
+            playAudio(currentPos + 1)
+        }
+
+        pause_play.setOnClickListener { playPause() }
+
+        playAudio(0)
+
 
     }
 
@@ -54,21 +68,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playAudio(media: String) {
+    private fun playAudio(audioPos: Int) {
         if (!serviceBounded) {
+
+            val storageUtil = StorageUtil(this)
+            storageUtil.storeAudio(audioList!!)
+            storageUtil.storeAudioIndex(audioPos)
+
             val playerIntent = Intent(this, MediaPlayerService::class.java)
-            playerIntent.putExtra("media", media)
+//            playerIntent.putExtra("media", media)
             startService(playerIntent)
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         } else {
+            val storage = StorageUtil(applicationContext)
+            storage.storeAudioIndex(audioPos)
 
+            //Service is active
+            //Send a broadcast to the service -> PLAY_NEW_AUDIO
+            val broadcastIntent = Intent(BROADCAST_PLAY_NEW_AUDIO)
+
+            sendBroadcast(broadcastIntent)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindService(serviceConnection)
-        playerService.stopSelf()
+//        unbindService(serviceConnection)
+//        playerService.stopSelf()
 
     }
 
@@ -89,10 +115,10 @@ class MainActivity : AppCompatActivity() {
         val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
         val cursor = contentResolver.query(uri, null, selection, null, sortOrder)
 
-        if(cursor!=null && cursor.count > 0){
+        if (cursor != null && cursor.count > 0) {
             audioList = ArrayList()
 
-            while (cursor.moveToNext()){
+            while (cursor.moveToNext()) {
                 val data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA))
                 val title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE))
                 val album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM))
@@ -106,5 +132,11 @@ class MainActivity : AppCompatActivity() {
 
         cursor?.close()
 
+    }
+
+    private fun playPause() {
+        val broadcastIntent = Intent(BROADCAST_PLAY_PAUSE)
+
+        sendBroadcast(broadcastIntent)
     }
 }
