@@ -1,13 +1,10 @@
-package com.softgroup.android.musicplayer.utils
+package com.nikitvad.android.musicplayer.utils
 
-import android.text.method.TextKeyListener.clear
-import android.R.id.edit
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.Context.MODE_PRIVATE
 import com.google.gson.reflect.TypeToken
 import com.google.gson.Gson
-import com.softgroup.android.musicplayer.data.Audio
+import com.nikitvad.android.musicplayer.data.Audio
 
 
 class StorageUtil(private val context: Context) {

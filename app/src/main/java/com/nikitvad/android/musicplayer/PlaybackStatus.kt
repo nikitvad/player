@@ -1,4 +1,4 @@
-package com.softgroup.android.musicplayer
+package com.nikitvad.android.musicplayer
 
 enum class PlaybackStatus {
     PLAYING,
