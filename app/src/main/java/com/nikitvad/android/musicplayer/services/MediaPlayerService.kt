@@ -18,8 +18,6 @@ import android.media.session.MediaSessionManager
 import android.os.Binder
 import android.os.IBinder
 import android.os.RemoteException
-import android.telephony.PhoneStateListener
-import android.telephony.TelephonyManager
 import android.util.Log
 import com.nikitvad.android.musicplayer.BuildConfig
 import com.nikitvad.android.musicplayer.ui.MainActivity
@@ -41,6 +39,7 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
     private var resumePosition = 0
 
     private var lostAudioFocus = false
+    private var forceSkipped = false
 
     private var audioList: ArrayList<Audio>? = null
     private var audioIndex = -1
@@ -237,8 +236,27 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
     }
 
     override fun onCompletion(mp: MediaPlayer?) {
-//        skipToNext()
-//        updateMetaData()
+        Log.d(TAG, "onCompletion: ")
+
+
+        if (!forceSkipped) {
+            if (audioIndex == audioList?.size!! - 1) {
+                audioIndex = 0
+                activeAudio = audioList?.get(audioIndex)
+            } else {
+                activeAudio = audioList?.get(++audioIndex)
+            }
+
+            StorageUtil(applicationContext).storeAudioIndex(audioIndex)
+
+            mediaPlayer.stop()
+
+            updateMediaPlayer(activeAudio?.data!!)
+            updateMetaData()
+            buildNotification(PlaybackStatus.PLAYING)
+        } else {
+            forceSkipped = false
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -392,18 +410,17 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
 
     fun skipToNext() {
 
-        Log.d(TAG, "skipToNext: ");
-        
+        forceSkipped = true
+
+        Log.d(TAG, "skipToNext: ")
+
         if (audioIndex == audioList?.size!! - 1) {
-            //if last in playlist
             audioIndex = 0
             activeAudio = audioList?.get(audioIndex)
         } else {
-            //get next in playlist
             activeAudio = audioList?.get(++audioIndex)
         }
 
-        //Update stored index
         StorageUtil(applicationContext).storeAudioIndex(audioIndex)
 
         mediaPlayer.stop()
@@ -415,6 +432,8 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
 
     fun skipToPrevious() {
         Log.d(TAG, "skipToPrevious: ");
+
+        forceSkipped = true
 
         if (audioIndex == 0) {
             //if first in playlist
@@ -536,6 +555,10 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
             actionString.equals(ACTION_PREVIOUS, true) -> transportControls?.skipToPrevious()
             actionString.equals(ACTION_STOP, true) -> transportControls?.stop()
         }
+    }
+
+    public fun getMediaPlayer(): MediaPlayer?{
+        return mediaPlayer
     }
 }
 

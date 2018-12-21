@@ -17,6 +17,8 @@ import com.nikitvad.android.musicplayer.services.MediaPlayerService
 import com.nikitvad.android.musicplayer.shortToast
 import com.nikitvad.android.musicplayer.utils.StorageUtil
 import kotlinx.android.synthetic.main.activity_main.*;
+import android.media.audiofx.Visualizer
+
 
 class MainActivity : AppCompatActivity(), AudioInfoListener {
 
@@ -44,10 +46,10 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
         mediaSession = MediaSession(applicationContext, "AudioPlayer")
 
+//        mVisualizer.enabled = true
         prev.setOnClickListener {
             playerService?.skipToPrevious()
         }
-
 
         next.setOnClickListener {
             playerService?.skipToNext()
@@ -88,6 +90,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
     override fun onInfoChanged(audio: Audio) {
         audioTitle.text = audio.title
         Glide.with(this).load(audio.albumArt).into(image)
+        Log.d(TAG, "onInfoChanged: ${audio.albumArt}");
     }
 
     override fun onStart() {
@@ -116,6 +119,9 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             serviceBounded = true
             playerService?.progressListener = audioProgressListener
             playerService?.infoListener = this@MainActivity
+
+            setupVisualizerFxAndUI()
+
 
             shortToast("Service Bounded")
 
@@ -164,8 +170,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val selection = MediaStore.Audio.Media.IS_MUSIC + "!=0"
         val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
-//        val albumCursor = contentResolver.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
-//                {MediaStore.Audio.Albums._ID, MediaStore.Audio.Albums.ALBUM_ART)
         val audioCursor = contentResolver.query(uri, null, selection, null, sortOrder)
 
         if (audioCursor != null && audioCursor.count > 0) {
@@ -177,10 +181,25 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
                 val album = audioCursor.getString(audioCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM))
                 val artist = audioCursor.getString(audioCursor.getColumnIndex(MediaStore.Audio.Media.ARTIST))
                 val albumId = audioCursor.getString(audioCursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
+                var albumArt: String? = ""
 
-                Log.d(TAG, "loadAudio: $albumId")
 
-                audioList?.add(Audio(data, title, album, artist))
+                val cursor = contentResolver.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                        arrayOf(MediaStore.Audio.Albums._ID, MediaStore.Audio.Albums.ALBUM_ART),
+                        MediaStore.Audio.Albums._ID + "=?",
+                        arrayOf(albumId),
+                        null)
+
+                if (cursor.moveToFirst()) {
+                    var columnIndex: Int? = cursor.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART)
+                    albumArt = columnIndex?.let { cursor.getString(it) }
+                    Log.d(TAG, "loadAudio: $albumArt");
+                    // do whatever you need to do
+                }
+
+                cursor.close()
+                audioList?.add(Audio(data, title, album, artist, albumId, albumArt))
+
 
             }
 
@@ -204,5 +223,28 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             }
 
         }
+    }
+
+    private lateinit var mVisualizer: Visualizer
+
+    private fun setupVisualizerFxAndUI() {
+
+        // Create the Visualizer object and attach it to our media player.
+        mVisualizer = Visualizer(playerService?.getMediaPlayer()?.audioSessionId!!)
+        mVisualizer.captureSize = Visualizer.getCaptureSizeRange()[1]
+        mVisualizer.setDataCaptureListener(
+                object : Visualizer.OnDataCaptureListener {
+                    override fun onWaveFormDataCapture(visualizer: Visualizer,
+                                                       bytes: ByteArray, samplingRate: Int) {
+
+
+                        this@MainActivity.visualizer.updateVisualizer(bytes)
+                    }
+
+                    override fun onFftDataCapture(visualizer: Visualizer,
+                                                  bytes: ByteArray, samplingRate: Int) {
+                    }
+                }, Visualizer.getMaxCaptureRate(), true, false)
+        mVisualizer.enabled = true
     }
 }

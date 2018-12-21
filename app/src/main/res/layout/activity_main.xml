@@ -23,7 +23,6 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Image Dragons - Natural" />
 
-
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -91,5 +90,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/audioTitle"
         tools:background="@android:color/black" />
+
+    <com.nikitvad.android.musicplayer.customview.VisualizerView
+        android:layout_width="match_parent"
+        android:elevation="10dp"
+        android:layout_height="match_parent"
+        android:id="@+id/visualizer"
+         />
 
 </android.support.constraint.ConstraintLayout>
