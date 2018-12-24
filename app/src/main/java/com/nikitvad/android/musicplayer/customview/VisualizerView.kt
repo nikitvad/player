@@ -33,9 +33,9 @@ class VisualizerView : View {
 
     private fun init() {
         mBytes = null
-        mForePaint.setStrokeWidth(1f)
+        mForePaint.setStrokeWidth(2f)
         mForePaint.setAntiAlias(true)
-        mForePaint.setColor(Color.rgb(0, 128, 255))
+        mForePaint.setColor(Color.rgb(207, 111, 85))
     }
 
     fun updateVisualizer(bytes: ByteArray) {

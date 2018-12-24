@@ -16,7 +16,7 @@ import com.nikitvad.android.musicplayer.services.AudioProgressListener
 import com.nikitvad.android.musicplayer.services.MediaPlayerService
 import com.nikitvad.android.musicplayer.shortToast
 import com.nikitvad.android.musicplayer.utils.StorageUtil
-import kotlinx.android.synthetic.main.activity_main.*;
+import kotlinx.android.synthetic.main.activity_main.*
 import android.media.audiofx.Visualizer
 
 
@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             playerService?.skipToNext()
         }
 
-        pause_play.setOnClickListener { playPause() }
+        play.setOnClickListener { playPause() }
 
 
         playAudio(0)
@@ -65,30 +65,30 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE)
 
 
-        playProgress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            var seekTo: Int = -1
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    seekTo = progress
-                }
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                ignoreAudioProgress = true
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                if (seekTo > -1) {
-                    playerService?.seekTo(seekTo)
-                }
-                ignoreAudioProgress = false
-            }
-        })
+//        playProgress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+//            var seekTo: Int = -1
+//            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+//                if (fromUser) {
+//                    seekTo = progress
+//                }
+//            }
+//
+//            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+//                ignoreAudioProgress = true
+//            }
+//
+//            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+//                if (seekTo > -1) {
+//                    playerService?.seekTo(seekTo)
+//                }
+//                ignoreAudioProgress = false
+//            }
+//        })
 
     }
 
     override fun onInfoChanged(audio: Audio) {
-        audioTitle.text = audio.title
+//        audioTitle.text = audio.title
         Glide.with(this).load(audio.albumArt).into(image)
         Log.d(TAG, "onInfoChanged: ${audio.albumArt}");
     }
@@ -218,8 +218,8 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
     private val audioProgressListener = object : AudioProgressListener {
         override fun onProgressChanged(audio: Audio, length: Int, progress: Int) {
             if (!ignoreAudioProgress) {
-                playProgress.max = length - 10
-                playProgress.progress = progress
+//                playProgress.max = length - 10
+//                playProgress.progress = progress
             }
 
         }

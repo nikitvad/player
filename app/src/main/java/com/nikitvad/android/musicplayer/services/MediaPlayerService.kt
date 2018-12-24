@@ -111,6 +111,7 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
             buildNotification(PlaybackStatus.PLAYING)
         }
 
+        //TODO crash here
         handleIncomingActions(intent!!)
         return super.onStartCommand(intent, flags, startId)
     }
