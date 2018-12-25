@@ -272,22 +272,20 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         // Create the Visualizer object and attach it to our media player.
         mVisualizer = Visualizer(playerService?.getMediaPlayer()?.audioSessionId!!)
         mVisualizer.captureSize = Visualizer.getCaptureSizeRange()[1]
-
+        mVisualizer.scalingMode = Visualizer.SCALING_MODE_NORMALIZED
         mVisualizer.setDataCaptureListener(
                 object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(visualizer: Visualizer,
                                                        bytes: ByteArray, samplingRate: Int) {
 
 
-//                        this@MainActivity.visualizer.updateVisualizer(bytes)
+                        this@MainActivity.visualizer.updateVisualizer(bytes)
                     }
 
                     override fun onFftDataCapture(visualizer: Visualizer,
                                                   bytes: ByteArray, samplingRate: Int) {
-
-                        this@MainActivity.visualizer.updateVisualizer(bytes)
                     }
-                }, Visualizer.getMaxCaptureRate(), false, true)
+                }, (Visualizer.getMaxCaptureRate()), true, false)
         mVisualizer.enabled = true
     }
 
