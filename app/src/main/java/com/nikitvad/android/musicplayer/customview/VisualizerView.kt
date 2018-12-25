@@ -8,11 +8,14 @@ import android.graphics.Rect
 import android.opengl.ETC1.getHeight
 import android.opengl.ETC1.getWidth
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import java.util.*
 
 
 class VisualizerView : View {
+
+    private val TAG = VisualizerView::class.java.simpleName
 
     private var mBytes: ByteArray? = null
     private var mPoints: FloatArray? = null
@@ -33,9 +36,9 @@ class VisualizerView : View {
 
     private fun init() {
         mBytes = null
-        mForePaint.setStrokeWidth(2f)
-        mForePaint.setAntiAlias(true)
-        mForePaint.setColor(Color.rgb(207, 111, 85))
+        mForePaint.strokeWidth = 4f
+        mForePaint.isAntiAlias = true
+        mForePaint.color = Color.rgb(207, 111, 85)
     }
 
     fun updateVisualizer(bytes: ByteArray) {
@@ -52,11 +55,15 @@ class VisualizerView : View {
             mPoints = FloatArray(mBytes!!.size * 4)
         }
         mRect.set(0, 0, getWidth(), getHeight())
-        for (i in 0 until mBytes!!.size - 8) {
+
+        for (i in 0 until mBytes!!.size - 4 ) {
+
+
             mPoints!![i * 4] = (mRect.width() * i / (mBytes!!.size - 1)).toFloat()
-            mPoints!![i * 4 + 1] = (mRect.height() / 2 + (mBytes!![i] + 128).toByte() * (mRect.height() / 2) / 128).toFloat()
+            mPoints!![i * 4 + 1] = (mRect.height() / 2 + (mBytes!![i]) * (mRect.height() / 2) / 128).toFloat()
+
             mPoints!![i * 4 + 2] = (mRect.width() * (i + 1) / (mBytes!!.size - 1)).toFloat()
-            mPoints!![i * 4 + 3] = (mRect.height() / 2 + (mBytes!![i + 1] + 128).toByte() * (mRect.height() / 2) / 128).toFloat()
+            mPoints!![i * 4 + 3] = (mRect.height() / 2 + (mBytes!![i + 1]) * (mRect.height() / 2) / 128).toFloat()
         }
         canvas.drawLines(mPoints, mForePaint)
     }

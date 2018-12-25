@@ -1,13 +1,13 @@
 package com.nikitvad.android.musicplayer.ui
 
 import android.content.*
+import android.content.pm.PackageManager
 import android.media.session.MediaSession
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.widget.SeekBar
 import com.bumptech.glide.Glide
 import com.nikitvad.android.musicplayer.R
 import com.nikitvad.android.musicplayer.data.Audio
@@ -18,6 +18,9 @@ import com.nikitvad.android.musicplayer.shortToast
 import com.nikitvad.android.musicplayer.utils.StorageUtil
 import kotlinx.android.synthetic.main.activity_main.*
 import android.media.audiofx.Visualizer
+import android.os.Build
+import android.support.v4.content.ContextCompat
+import java.nio.file.Files.size
 
 
 class MainActivity : AppCompatActivity(), AudioInfoListener {
@@ -28,6 +31,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
     }
 
     private val TAG = "MainActivity"
+    private val CODE_PERMISSION_REQUEST = 200
 
     private var playerService: MediaPlayerService? = null
     private var serviceBounded = false
@@ -36,12 +40,27 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
     private var ignoreAudioProgress = false
 
+    private val permissions = arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            android.Manifest.permission.RECORD_AUDIO)
+
 
     private lateinit var mediaSession: MediaSession
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        if (isPermissionGranted()) {
+            initPlayer()
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(permissions, CODE_PERMISSION_REQUEST)
+            }
+        }
+
+    }
+
+    private fun initPlayer() {
         loadAudio()
 
         mediaSession = MediaSession(applicationContext, "AudioPlayer")
@@ -87,10 +106,31 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
     }
 
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (requestCode == CODE_PERMISSION_REQUEST) {
+            var granted = true
+            grantResults.forEach {
+                if (it != PackageManager.PERMISSION_GRANTED) {
+                    granted = false
+                }
+            }
+
+            if (granted) {
+                initPlayer()
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    requestPermissions(permissions, requestCode)
+                }
+            }
+
+        }
+    }
+
     override fun onInfoChanged(audio: Audio) {
 //        audioTitle.text = audio.title
         Glide.with(this).load(audio.albumArt).into(image)
-        Log.d(TAG, "onInfoChanged: ${audio.albumArt}");
+        Log.d(TAG, "onInfoChanged: ${audio.albumArt}")
     }
 
     override fun onStart() {
@@ -193,7 +233,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
                 if (cursor.moveToFirst()) {
                     var columnIndex: Int? = cursor.getColumnIndex(MediaStore.Audio.Albums.ALBUM_ART)
                     albumArt = columnIndex?.let { cursor.getString(it) }
-                    Log.d(TAG, "loadAudio: $albumArt");
+                    Log.d(TAG, "loadAudio: $albumArt")
                     // do whatever you need to do
                 }
 
@@ -232,19 +272,31 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         // Create the Visualizer object and attach it to our media player.
         mVisualizer = Visualizer(playerService?.getMediaPlayer()?.audioSessionId!!)
         mVisualizer.captureSize = Visualizer.getCaptureSizeRange()[1]
+
         mVisualizer.setDataCaptureListener(
                 object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(visualizer: Visualizer,
                                                        bytes: ByteArray, samplingRate: Int) {
 
 
-                        this@MainActivity.visualizer.updateVisualizer(bytes)
+//                        this@MainActivity.visualizer.updateVisualizer(bytes)
                     }
 
                     override fun onFftDataCapture(visualizer: Visualizer,
                                                   bytes: ByteArray, samplingRate: Int) {
+
+                        this@MainActivity.visualizer.updateVisualizer(bytes)
                     }
-                }, Visualizer.getMaxCaptureRate(), true, false)
+                }, Visualizer.getMaxCaptureRate(), false, true)
         mVisualizer.enabled = true
+    }
+
+    private fun isPermissionGranted(): Boolean {
+        permissions.forEach {
+            if (ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED) {
+                return false
+            }
+        }
+        return true
     }
 }

@@ -41,30 +41,6 @@ class PlayerControllBehavior(context: Context?, attrs: AttributeSet?) : Coordina
 
         Log.d(TAG, "updateView: ${view?.bottom!!}")
 
-//        if (view?.bottom!! < initialHeight) {
-//            val layoutParams = imageButton?.layoutParams
-//            layoutParams?.height = view.bottom
-//            layoutParams?.width = view.bottom
-//            imageButton?.layoutParams = layoutParams
-//        } else {
-//            val layoutParams = imageButton?.layoutParams
-//            layoutParams?.height = initialHeight
-//            layoutParams?.width = initialHeight
-//            imageButton?.layoutParams = layoutParams
-//        }
-
-//        if (view.bottom < imageButton?.measuredHeight!!) {
-//            val scale = view.bottom.toFloat() / initialHeight
-//
-//            imageButton.scaleY = scale
-//            imageButton.scaleX = scale
-//
-//        } else if (initialHeight < view.bottom) {
-//            imageButton.scaleY = 1f
-//            imageButton.scaleX = 1f
-//
-//        }
-
         if (view.bottom < imageButton?.measuredHeight!!) {
             val layoutParams = imageButton.layoutParams
             layoutParams?.height = view.bottom
