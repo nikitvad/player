@@ -20,6 +20,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.media.audiofx.Visualizer
 import android.os.Build
 import android.support.v4.content.ContextCompat
+import android.widget.SeekBar
 import java.nio.file.Files.size
 
 
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             android.Manifest.permission.RECORD_AUDIO)
 
 
+
     private lateinit var mediaSession: MediaSession
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +64,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
     private fun initPlayer() {
         loadAudio()
-
         mediaSession = MediaSession(applicationContext, "AudioPlayer")
 
 //        mVisualizer.enabled = true
@@ -84,25 +85,25 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE)
 
 
-//        playProgress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-//            var seekTo: Int = -1
-//            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-//                if (fromUser) {
-//                    seekTo = progress
-//                }
-//            }
-//
-//            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-//                ignoreAudioProgress = true
-//            }
-//
-//            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-//                if (seekTo > -1) {
-//                    playerService?.seekTo(seekTo)
-//                }
-//                ignoreAudioProgress = false
-//            }
-//        })
+        playProgress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            var seekTo: Int = -1
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    seekTo = progress
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                ignoreAudioProgress = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                if (seekTo > -1) {
+                    playerService?.seekTo(seekTo)
+                }
+                ignoreAudioProgress = false
+            }
+        })
 
     }
 
@@ -129,6 +130,9 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
     override fun onInfoChanged(audio: Audio) {
 //        audioTitle.text = audio.title
+        soundName.text = audio.title
+        performer.text = audio.artist
+
         Glide.with(this).load(audio.albumArt).into(image)
         Log.d(TAG, "onInfoChanged: ${audio.albumArt}")
     }
@@ -258,8 +262,8 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
     private val audioProgressListener = object : AudioProgressListener {
         override fun onProgressChanged(audio: Audio, length: Int, progress: Int) {
             if (!ignoreAudioProgress) {
-//                playProgress.max = length - 10
-//                playProgress.progress = progress
+                playProgress.max = length - 10
+                playProgress.progress = progress
             }
 
         }
@@ -269,7 +273,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
     private fun setupVisualizerFxAndUI() {
 
-        // Create the Visualizer object and attach it to our media player.
         mVisualizer = Visualizer(playerService?.getMediaPlayer()?.audioSessionId!!)
         mVisualizer.captureSize = Visualizer.getCaptureSizeRange()[1]
         mVisualizer.scalingMode = Visualizer.SCALING_MODE_NORMALIZED
@@ -284,6 +287,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
                     override fun onFftDataCapture(visualizer: Visualizer,
                                                   bytes: ByteArray, samplingRate: Int) {
+
                     }
                 }, (Visualizer.getMaxCaptureRate()), true, false)
         mVisualizer.enabled = true
