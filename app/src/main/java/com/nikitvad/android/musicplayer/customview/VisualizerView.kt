@@ -61,12 +61,12 @@ class VisualizerView : View {
         super.onDraw(canvas)
 
         if (mPoints == null || mPoints!!.size < mBytes.size * 2) {
-            mPoints = FloatArray(mBytes.size * 4)
+            mPoints = FloatArray(mBytes.size * 2)
         }
 
-        val angelOffset = (mBytes.size / 6.28319)
+        val angelOffset = ((mBytes.size) / 6.28319)
 
-        for (i in 0 until mBytes.size - 1) {
+        for (i in 0 until mBytes.size) {
 
             val value = mBytes[i].toInt()
 
@@ -92,7 +92,7 @@ class VisualizerView : View {
 
     @Synchronized
     private fun updateVisualizationData() {
-        for (i in 0 until mBytes.size - 1) {
+        for (i in 0 until mBytes.size) {
 
             val b = Math.abs(mBytes[i].toInt())
 
@@ -103,7 +103,7 @@ class VisualizerView : View {
         }
 
         if (canvasRotation < 359) {
-            canvasRotation+=2
+            canvasRotation += 1
         } else {
             canvasRotation = 0
         }
@@ -114,10 +114,9 @@ class VisualizerView : View {
     private fun mergeVisualizationData(bytes: ByteArray) {
         val minCount = if (bytes.size < mBytes.size) bytes.size else mBytes.size
         for (i in 0 until minCount) {
-            val b = Math.abs(bytes[i].toInt())
+            val b = Math.abs(bytes[i*2].toInt())
             if (mBytes[i] > b) mBytes[i] = b.toByte()
         }
-
 
     }
 }

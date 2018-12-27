@@ -68,6 +68,10 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
         const val ACTION_PREVIOUS = "${BuildConfig.APPLICATION_ID}.ACTION_PREVIOUS"
         const val ACTION_NEXT = "${BuildConfig.APPLICATION_ID}.ACTION_NEXT"
         const val ACTION_STOP = "${BuildConfig.APPLICATION_ID}.ACTION_STOP"
+        const val ACTION_PLAY_AUDIO = "${BuildConfig.APPLICATION_ID}.ACTION_PLAY_AUDIO"
+
+        const val ARG_AUDIO_POS = "${BuildConfig.APPLICATION_ID}.ARG_AUDIO_POS"
+
     }
 
     override fun onCreate() {
@@ -334,14 +338,25 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
 
     private val playNewAudioReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            audioIndex = StorageUtil(applicationContext).loadAudioIndex()
+
+            audioIndex = -1
+            intent?.let { audioIndex = it.getIntExtra(ARG_AUDIO_POS, -1) }
+
+
+            if (audioIndex < 0) {
+                audioIndex = StorageUtil(applicationContext).loadAudioIndex()
+            }
 
             if (audioIndex >= 0 && audioIndex < audioList?.size!!) {
                 activeAudio = audioList?.get(audioIndex)
+
+                Log.d("mPlayAudio", "playNewAudioReceiver: $audioIndex, ${activeAudio!!.title}")
+
             } else {
                 stopSelf()
             }
 
+            forceSkipped = true
             mediaPlayer.stop()
             updateMediaPlayer(activeAudio?.data!!)
             updateMetaData()
@@ -405,7 +420,7 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
                 .putString(MediaMetadata.METADATA_KEY_TITLE, activeAudio?.title)
                 .build())
 
-        Log.d(TAG, "updateMetaData: ${activeAudio?.title}, ${infoListener?.toString()}");
+        Log.d(TAG, "updateMetaData: ${activeAudio?.title}, ${infoListener?.toString()}")
         activeAudio?.let { infoListener?.onInfoChanged(it) }
     }
 
@@ -558,7 +573,7 @@ class MediaPlayerService : Service(), MediaPlayer.OnCompletionListener,
         }
     }
 
-    public fun getMediaPlayer(): MediaPlayer?{
+    public fun getMediaPlayer(): MediaPlayer? {
         return mediaPlayer
     }
 }

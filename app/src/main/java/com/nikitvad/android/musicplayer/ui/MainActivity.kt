@@ -20,7 +20,13 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.media.audiofx.Visualizer
 import android.os.Build
 import android.support.v4.content.ContextCompat
+import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.SeekBar
+import com.nikitvad.android.musicplayer.BR
+import com.nikitvad.android.musicplayer.databinding.ItemAudioBinding
+import com.nikitvad.android.musicplayer.utils.AppOnItemClickListener
+import com.nikitvad.android.musicplayer.utils.AppRecyclerAdapter
 import java.nio.file.Files.size
 
 
@@ -45,7 +51,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             android.Manifest.permission.RECORD_AUDIO)
 
 
-
     private lateinit var mediaSession: MediaSession
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +71,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         loadAudio()
         mediaSession = MediaSession(applicationContext, "AudioPlayer")
 
-//        mVisualizer.enabled = true
         prev.setOnClickListener {
             playerService?.skipToPrevious()
         }
@@ -129,17 +133,16 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
     }
 
     override fun onInfoChanged(audio: Audio) {
-//        audioTitle.text = audio.title
         soundName.text = audio.title
         performer.text = audio.artist
 
         Glide.with(this).load(audio.albumArt).into(image)
-        Log.d(TAG, "onInfoChanged: ${audio.albumArt}")
+
+        adapter.selectItem(audio)
     }
 
     override fun onStart() {
         super.onStart()
-
         playerService?.progressListener = audioProgressListener
         playerService?.infoListener = this
     }
@@ -155,6 +158,8 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             shortToast("Service Disconnected")
             Log.d(TAG, ": ")
             serviceBounded = false
+            mVisualizer?.enabled = false
+            mVisualizer?.release()
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -165,9 +170,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             playerService?.infoListener = this@MainActivity
 
             setupVisualizerFxAndUI()
-
-
-            shortToast("Service Bounded")
 
         }
     }
@@ -187,7 +189,6 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             //Service is active
             //Send a broadcast to the service -> PLAY_NEW_AUDIO
             val broadcastIntent = Intent(BROADCAST_PLAY_NEW_AUDIO)
-
             sendBroadcast(broadcastIntent)
         }
     }
@@ -251,6 +252,10 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
         audioCursor?.close()
 
+        adapter.setItems(audioList!!)
+        musicList.adapter = adapter
+        musicList.layoutManager = LinearLayoutManager(this)
+
     }
 
     private fun playPause() {
@@ -269,18 +274,16 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
         }
     }
 
-    private lateinit var mVisualizer: Visualizer
+    private var mVisualizer: Visualizer? = null
 
     private fun setupVisualizerFxAndUI() {
-
         mVisualizer = Visualizer(playerService?.getMediaPlayer()?.audioSessionId!!)
-        mVisualizer.captureSize = Visualizer.getCaptureSizeRange()[1]
-        mVisualizer.scalingMode = Visualizer.SCALING_MODE_NORMALIZED
-        mVisualizer.setDataCaptureListener(
+        mVisualizer?.captureSize = Visualizer.getCaptureSizeRange()[1]
+        mVisualizer?.scalingMode = Visualizer.SCALING_MODE_NORMALIZED
+        mVisualizer?.setDataCaptureListener(
                 object : Visualizer.OnDataCaptureListener {
                     override fun onWaveFormDataCapture(visualizer: Visualizer,
                                                        bytes: ByteArray, samplingRate: Int) {
-
 
                         this@MainActivity.visualizer.updateVisualizer(bytes)
                     }
@@ -290,7 +293,7 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
 
                     }
                 }, (Visualizer.getMaxCaptureRate()), true, false)
-        mVisualizer.enabled = true
+        mVisualizer?.enabled = true
     }
 
     private fun isPermissionGranted(): Boolean {
@@ -300,5 +303,24 @@ class MainActivity : AppCompatActivity(), AudioInfoListener {
             }
         }
         return true
+    }
+
+    val adapter: AppRecyclerAdapter<ItemAudioBinding, Audio> = AppRecyclerAdapter<ItemAudioBinding, Audio>(R.layout.item_audio, BR.audio,
+            object : AppOnItemClickListener<Audio> {
+                override fun onItemClick(view: View, item: Audio) {
+                    playAudio(item)
+                }
+
+            })
+
+    fun playAudio(audio: Audio){
+
+        val broadcastIntent = Intent(BROADCAST_PLAY_NEW_AUDIO)
+        val pos: Int = audioList!!.indexOf(audio)
+
+        broadcastIntent.putExtra(MediaPlayerService.ARG_AUDIO_POS, pos)
+        sendBroadcast(broadcastIntent)
+
+
     }
 }
